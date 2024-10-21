@@ -5,7 +5,7 @@ import Header from "../Header";
 import ProfileInfo from "./ProfileInfo";
 import Quickie from "../Quickie/Quickie";
 import Loader from "../Loader";
-import { getFirestore, collection, query, where, onSnapshot } from "firebase/firestore"; // Firestore Firestore imports
+import { getFirestore, collection, query, where, onSnapshot } from "firebase/firestore"; // Firestore imports
 
 const Wrapper = styled.div`
   padding-bottom: 5rem;
@@ -54,6 +54,7 @@ const Profile = () => {
           });
         } else {
           console.log("No such profile!");
+          setProfileData(null);
         }
 
         setLoading(false);
@@ -65,19 +66,26 @@ const Profile = () => {
 
   if (loading) return <Loader />;
 
+  // Check if profileData exists before rendering firstname and lastname
   return (
     <Wrapper>
       <Header>
         <div className="profile-top">
-          <span>{`${profileData.firstname} ${profileData.lastname}`}</span>
-          <span className="quickieCount">
-            {quickies.length
-              ? `${quickies.length} Attacks`
-              : "No Attacks"}
-          </span>
+          {profileData ? (
+            <>
+              <span>{`${profileData.firstname} ${profileData.lastname}`}</span>
+              <span className="quickieCount">
+                {quickies.length ? `${quickies.length} Attacks` : "No Attacks"}
+              </span>
+            </>
+          ) : (
+            <span>Profile not found</span>
+          )}
         </div>
       </Header>
-      <ProfileInfo profile={profileData} />
+
+      {profileData && <ProfileInfo profile={profileData} />}
+      
       {quickies.length
         ? quickies.map((quickie) => (
             <Quickie key={quickie.id} quickie={quickie} />

@@ -297,3 +297,32 @@ export const MoreIcon = (
     </g>
   </Svg>
 );
+
+export const DangerIcon = () => (
+  <Svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    width="24"
+    height="24"
+    fill="red" // You can change this color as needed
+  >
+    <g>
+      <path d="M11.001 9h2v5h-2zm0 7h2v2h-2z"></path>
+      <path d="M1 21h22L12 2 1 21zM12 4.3l7.38 13.4H4.62L12 4.3z"></path>
+    </g>
+  </Svg>
+);
+
+export const AdminIcon = ({ width = 24, height = 24, color = "#ff6347" }) => {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={width}
+      height={height}
+      fill={color}
+      viewBox="0 0 24 24"
+    >
+      <path d="M12 2l9 4.5v5c0 5.25-3.937 9.978-9 11-5.063-1.022-9-5.75-9-11v-5l9-4.5zm0 2.154l-7 3.5v4.692c0 4.238 3.124 8.036 7 8.946 3.876-.91 7-4.708 7-8.946v-4.692l-7-3.5zm0 8.846c-.828 0-1.5-.672-1.5-1.5s.672-1.5 1.5-1.5 1.5.672 1.5 1.5-.672 1.5-1.5 1.5zm2.5 2h-5c0 2 2.5 2 2.5 2s2.5 0 2.5-2z" />
+    </svg>
+  );
+};

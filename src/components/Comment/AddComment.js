@@ -6,7 +6,7 @@ import useInput from "../../hooks/useInput";
 import Button from "../../styles/Button";
 import { displayError } from "../../utils";
 import Avatar from "../../styles/Avatar";
-import { getFirestore, doc, getDoc, updateDoc, arrayUnion, increment } from "firebase/firestore"; // Firebase Firestore imports
+import { getFirestore, doc, getDoc, updateDoc, arrayUnion, increment, collection, addDoc } from "firebase/firestore"; // Firebase Firestore imports
 import { getAuth } from "firebase/auth"; // Firebase Auth import
 
 const defaultAvatarUrl = "/default-avatar.png";
@@ -89,7 +89,18 @@ const AddComment = ({ id }) => {
       }
       const { handle } = userSnap.data(); // Get the user's handle
 
+      // Fetch the quickie document to get the owner's userId
       const quickieRef = doc(db, "quickies", id);
+      const quickieSnap = await getDoc(quickieRef);
+      
+      // Ensure the quickie exists before proceeding
+      if (!quickieSnap.exists()) {
+        return toast.error("Quickie not found.");
+      }
+
+      const postOwnerId = quickieSnap.data().userId; // Post owner's ID
+
+      // Add the comment to the quickie document
       await updateDoc(quickieRef, {
         comments: arrayUnion({
           text: comment.value,
@@ -99,11 +110,23 @@ const AddComment = ({ id }) => {
           handle: handle, // Include the user's handle in the comment
           createdAt: new Date(),
         }),
-        commentsCount: increment(1), // Correctly increment the comment count
+        commentsCount: increment(1), // Increment the comment count
+      });
+
+      // Create a notification for the post owner
+      const notificationsRef = collection(db, "notifications");
+      await addDoc(notificationsRef, {
+        type: "comment",
+        quickieId: id, // The ID of the quickie that was commented on
+        fromUserId: user.uid, // User who commented
+        userId: postOwnerId, // Notify the post owner
+        createdAt: new Date(),
+        isRead: false,
       });
 
       toast.success("Your reply has been added");
     } catch (err) {
+      console.error("Error adding comment: ", err);
       return displayError(err);
     }
 

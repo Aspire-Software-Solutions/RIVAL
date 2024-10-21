@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import Button from "../../styles/Button";
 import { displayError } from "../../utils";
-import { getFirestore, doc, updateDoc, arrayUnion, arrayRemove, increment, getDoc } from "firebase/firestore"; // Firestore
+import { getFirestore, doc, updateDoc, arrayUnion, arrayRemove, 
+         increment, getDoc, collection, addDoc } from "firebase/firestore"; // Firestore
 import { getAuth } from "firebase/auth"; // Firebase Authentication
 
 const Follow = ({ isFollowing, userId, sm = false, relative = false }) => {
@@ -72,6 +73,16 @@ const Follow = ({ isFollowing, userId, sm = false, relative = false }) => {
           following: arrayUnion(userId), // Add to following of the current user
           followingCount: increment(1), // Increment following count
         });
+
+        // Create a follow notification for the user being followed
+        const notificationsRef = collection(db, "notifications"); 
+        await addDoc(notificationsRef, {                        
+          type: "follow",                                
+          fromUserId: currentUser.uid, 
+          userId: userId,
+          createdAt: new Date(),
+          isRead: false,
+        });        
       }
     } catch (err) {
       displayError(err);

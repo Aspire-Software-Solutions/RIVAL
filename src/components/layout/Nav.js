@@ -1,9 +1,9 @@
 import styled from "styled-components";
 import { NavLink, useHistory, useLocation } from "react-router-dom"; // Import necessary hooks
 import { getAuth } from "firebase/auth"; // Import Firebase Auth
-import { getFirestore, doc, getDoc } from "firebase/firestore"; // Firestore imports
+import { getFirestore, collection, query, where, doc, getDocs, getDoc, onSnapshot } from "firebase/firestore"; // Firestore imports
 import React, { useState, useEffect, useRef } from "react";
-import { HomeIcon, ExploreIcon, NotificationIcon, ChatIcon, BackIcon } from "../Icons"; // Add your BackIcon here
+import { HomeIcon, ExploreIcon, NotificationIcon, ChatIcon, BackIcon, AdminIcon } from "../Icons"; // Add your BackIcon here
 import ToggleTheme from "../ToggleTheme"; // Import the theme toggle component
 
 const Wrapper = styled.nav`
@@ -122,12 +122,27 @@ const Wrapper = styled.nav`
   }
 `;
 
+// Style for the notification count badge
+const badgeStyle = {
+  position: "absolute",
+  top: "-5px",
+  right: "-10px",
+  backgroundColor: "red",
+  color: "white",
+  borderRadius: "50%",
+  padding: "3px 6px",
+  fontSize: "12px",
+  fontWeight: "bold",
+};
+
 const Nav = () => {
   const auth = getAuth();
   const user = auth.currentUser;
   const [handle, setHandle] = useState(null);
+  const [unreadCount, setUnreadCount] = useState(0); // State to hold the count of unread notifications
   const [userAvatar, setUserAvatar] = useState("/default-avatar.png");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false); // New state for admin status
   const dropdownRef = useRef(null);
   const db = getFirestore();
   const history = useHistory(); // To use history and navigate back
@@ -149,11 +164,36 @@ const Nav = () => {
           const profileData = profileSnap.data();
           setHandle(profileData.handle);
           setUserAvatar(profileData.avatarUrl || "/default-avatar.png");
+          setIsAdmin(profileData.isAdmin || false); // Check if the user is an admin
         }
       }
     };
     fetchProfile();
   }, [user, db]);
+
+  // Function to update unread notification count
+  const updateUnreadCount = (count) => {
+    setUnreadCount(count);
+  };
+
+  useEffect(() => {
+    if (!user) return;
+  
+    const notificationsRef = collection(db, "notifications");
+    const q = query(
+      notificationsRef,
+      where("userId", "==", user.uid),
+      where("isRead", "==", false) // Only unread notifications
+    );
+  
+    // Listen for real-time updates
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setUnreadCount(snapshot.size); // Update unreadCount state in real-time
+    });
+  
+    // Clean up the listener on component unmount
+    return () => unsubscribe();
+  }, [db, user]);
 
   const toggleDropdown = () => {
     setIsDropdownOpen((prevState) => !prevState);
@@ -192,11 +232,25 @@ const Nav = () => {
             <ExploreIcon />
           </NavLink>
         </li>
+        {isAdmin && (
+          <li>
+            <NavLink activeClassName="selected" to="/ContentModeration">
+              <AdminIcon /> {/* Use any icon you want here */}
+            </NavLink>
+          </li>
+        )}
       </div>
 
       <div className="nav-right">
-        <NavLink activeClassName="selected" to="/notifications">
-          <NotificationIcon />
+      <NavLink activeClassName="selected" to="/notifications">
+          <div style={{ position: "relative" }}>
+            <NotificationIcon />
+            {unreadCount > 0 && (
+              <span style={badgeStyle}>
+                {unreadCount}
+              </span>
+            )}
+          </div>
         </NavLink>
         <NavLink activeClassName="selected" to="/conversations">
           <ChatIcon />
@@ -210,6 +264,7 @@ const Nav = () => {
             <div className="dropdown" ref={dropdownRef}>
               <NavLink to={`/${handle}`}>Profile</NavLink>
               <NavLink to="/bookmarks">Bookmarks</NavLink>
+
               <ToggleTheme /> {/* Inserted theme toggle component */}
               <button onClick={() => auth.signOut()}>Logout</button>
             </div>
